@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Préstamos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --bg:#EDF1EE; --surface:#FFFFFF; --ink:#1A2420; --muted:#5B6B64; --line:#CAD5CF;
+  --green:#1F5E4C; --green-ink:#FFFFFF; --input:#FFF5D1; --input-line:#E2C45E;
+  --danger:#A63A2B; --ok:#2E7D4F; --paper:#FFFFFF; --paper-ink:#1B1B1B;
+  --sans:"Libre Franklin",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#121815; --surface:#1B2420; --ink:#E6EEE9; --muted:#9AABA3; --line:#2E3B35;
+    --green:#5FB394; --green-ink:#0E1A15; --input:#2B2918; --input-line:#7E6C2A;
+    --danger:#E0806F; --ok:#6FC492; --paper:#F7F7F5; --paper-ink:#1B1B1B;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121815; --surface:#1B2420; --ink:#E6EEE9; --muted:#9AABA3; --line:#2E3B35;
+  --green:#5FB394; --green-ink:#0E1A15; --input:#2B2918; --input-line:#7E6C2A;
+  --danger:#E0806F; --ok:#6FC492; --paper:#F7F7F5; --paper-ink:#1B1B1B;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.45;-webkit-text-size-adjust:100%}
+main{max-width:560px;margin:0 auto;padding:16px 16px 110px}
+h1{font-size:15px;font-weight:600;color:var(--muted);margin:4px 0 12px;letter-spacing:.01em}
+h2{font-size:19px;font-weight:700;margin:22px 0 10px}
+h3{font-size:15px;font-weight:600;margin:18px 0 8px;color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+
+/* Hero: la cuota */
+.hero{background:var(--green);color:var(--green-ink);border-radius:18px;padding:18px 18px 16px;margin-bottom:6px}
+.hero .lead{font-size:15px;opacity:.85}
+.hero .big{font-size:44px;font-weight:700;line-height:1.05;letter-spacing:-.02em;margin:2px 0 10px}
+.hero .facts{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px}
+.hero .facts b{font-weight:600}
+
+/* Campos */
+.field{display:block;margin:12px 0}
+.field > span{display:block;font-size:14px;color:var(--muted);margin-bottom:5px}
+.field small{display:block;font-size:12.5px;color:var(--muted);margin-top:4px}
+input,select{width:100%;min-width:0;font:inherit;font-size:17px;color:var(--ink);background:var(--input);border:1px solid var(--input-line);border-radius:10px;padding:11px 12px;min-height:46px;-webkit-appearance:none;appearance:none}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+input[readonly]{background:transparent;border-color:var(--line)}
+.row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.row2 > *{min-width:0}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.seg button{font:inherit;font-size:19px;font-weight:700;min-height:58px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;gap:2px;cursor:pointer}
+.seg button small{font-size:12px;font-weight:500;color:var(--muted)}
+.seg button[aria-pressed="true"] small{color:inherit;opacity:.85}
+.seg button[aria-pressed="true"]{background:var(--green);color:var(--green-ink);border-color:var(--green)}
+.seg-sub{font-size:12.5px;color:var(--muted);margin-top:6px}
+
+/* Resultados */
+.list{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px 14px;margin:8px 0}
+.list div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:15px}
+.list div:last-child{border-bottom:0}
+.list dt,.list span:first-child{color:var(--muted)}
+.list strong{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.note{font-size:13.5px;color:var(--muted);margin:8px 2px}
+.warn{background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger);border-radius:10px;padding:10px 12px;font-size:14px;margin:10px 0}
+.ok{color:var(--ok)}
+
+/* Botones */
+.btn{display:block;width:100%;font:inherit;font-size:16px;font-weight:600;min-height:50px;border-radius:12px;border:0;background:var(--green);color:var(--green-ink);margin:10px 0;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--green);border:1.5px solid var(--green)}
+.btn:disabled{opacity:.5}
+
+/* Documento */
+.paper{background:var(--paper);color:var(--paper-ink);font-family:var(--serif);font-size:13.5px;line-height:1.55;padding:22px 18px;border-radius:6px;box-shadow:0 1px 0 var(--line),0 0 0 1px var(--line);margin:10px 0 18px}
+.paper h4{font-family:var(--sans);font-size:15px;text-align:center;margin:0 0 14px;letter-spacing:.02em}
+.paper p{margin:0 0 10px;text-align:justify;hyphens:auto}
+.paper table{width:100%;border-collapse:collapse;margin:4px 0 12px;font-size:12.5px}
+.paper td{border:1px solid #BDBDBD;padding:5px 7px;vertical-align:top}
+.paper td:first-child{background:#F0F0F0;width:46%}
+.paper .sig{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:38px;font-size:12.5px}
+.paper .sig div{border-top:1px solid #333;padding-top:4px}
+.paper .right{text-align:right;font-weight:600;font-family:var(--sans)}
+
+/* Cronograma */
+.table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+table.crono{border-collapse:collapse;width:100%;min-width:520px;font-size:14px;font-variant-numeric:tabular-nums}
+.crono th,.crono td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.crono th{font-weight:600;color:var(--muted);font-size:12.5px;position:sticky;top:0;background:var(--surface)}
+.crono td:first-child,.crono th:first-child{text-align:center}
+
+/* Esquema */
+.scheme{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px 10px;align-items:center}
+.scheme .h{font-size:12.5px;color:var(--muted)}
+.scheme .c{font-weight:700;font-size:17px;text-align:center;min-width:34px}
+.scheme .r{font-size:14px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+
+/* Barra inferior */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom,0px);z-index:10}
+nav.tabs button{font:inherit;font-size:12px;font-weight:500;color:var(--muted);background:none;border:0;min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer}
+nav.tabs svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+nav.tabs button[aria-selected="true"]{color:var(--green);font-weight:700}
+section[hidden]{display:none}
+.toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:20}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+
+@media print{
+  nav.tabs,.no-print,.hero,h1,h2,h3,.btn,.note,.warn{display:none!important}
+  body{background:#fff}
+  main{padding:0;max-width:none}
+  section{display:none!important}
+  section#docs{display:block!important}
+  .paper{box-shadow:none;border-radius:0;padding:0;font-size:11.5pt}
+  .paper + .paper{break-before:page}
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>Préstamos personales</h1>
+  <div class="hero" aria-live="polite">
+    <div class="lead" id="heroLead">6 cuotas de</div>
+    <div class="big num" id="heroCuota">$ 0</div>
+    <div class="facts">
+      <span>Total <b class="num" id="heroTotal">$ 0</b></span>
+      <span>Tasa mensual <b class="num" id="heroTasa">0%</b></span>
+      <span>TEA <b class="num" id="heroTea">0%</b></span>
+      <span id="heroGastos" hidden>Incluye <b class="num" id="heroGastosVal">$ 0</b> de gastos de firmas</span>
+    </div>
+  </div>
+
+  <!-- CALCULAR -->
+  <section id="calc" role="tabpanel">
+    <h2>Préstamo</h2>
+    <label class="field"><span>Monto que recibe el cliente</span>
+      <input id="monto" inputmode="numeric" autocomplete="off"></label>
+    <div class="field"><span>Cantidad de cuotas</span>
+      <div class="seg" id="segCuotas" role="group" aria-label="Cantidad de cuotas"></div>
+      <div class="seg-sub" id="segSub"></div>
+    </div>
+    <div class="row2">
+      <label class="field"><span>Gastos de firmas</span>
+        <input id="gastos" inputmode="numeric" autocomplete="off"><small>Se suman al préstamo</small></label>
+      <label class="field"><span>Cuota manual</span>
+        <input id="cman" inputmode="numeric" autocomplete="off" placeholder="Vacía = esquema"><small>Reemplaza el recargo</small></label>
+    </div>
+    <div class="row2">
+      <label class="field"><span>Fecha del préstamo</span><input id="fecha" type="date"></label>
+      <label class="field"><span>1ª cuota</span><input id="venc1" type="date"></label>
+    </div>
+    <div class="row2">
+      <label class="field"><span>IVA s/ intereses (%)</span><input id="iva" inputmode="decimal"></label>
+      <label class="field"><span>Punitorio (% anual)</span><input id="pun" inputmode="decimal" placeholder="Auto"><small id="punHint">Vacío = 50% de la TNA</small></label>
+    </div>
+    <div id="cmanWarn" class="warn" hidden>Estás usando cuota manual: el recargo del esquema no se aplica. Borrala al terminar.</div>
+
+    <h3>Resultado</h3>
+    <dl class="list" id="results"></dl>
+    <p class="note">La TEA mide lo que ganás vos sobre lo que prestás. El CFT mide lo que le cuesta al cliente sobre lo que recibe; por eso sube con los gastos de firmas.</p>
+  </section>
+
+  <!-- PARTES -->
+  <section id="partes" role="tabpanel" hidden>
+    <h2>Cliente</h2>
+    <label class="field"><span>Nombre y apellido</span><input id="dnom" autocomplete="off"></label>
+    <div class="row2">
+      <label class="field"><span>DNI</span><input id="ddni" inputmode="numeric" autocomplete="off"></label>
+      <label class="field"><span>CUIL</span><input id="dcuil" inputmode="numeric" autocomplete="off"></label>
+    </div>
+    <label class="field"><span>Domicilio real</span><input id="ddom" autocomplete="off"></label>
+    <div class="row2">
+      <label class="field"><span>Teléfono / WhatsApp</span><input id="dtel" inputmode="tel" autocomplete="off"></label>
+      <label class="field"><span>Correo electrónico</span><input id="dmail" type="email" autocomplete="off"></label>
+    </div>
+    <label class="field"><span>CBU donde recibe el dinero</span><input id="dcbu" inputmode="numeric" autocomplete="off"></label>
+    <button class="btn ghost" id="btnNuevo" type="button">Nuevo cliente (borrar datos del cliente)</button>
+
+    <h2>Tus datos</h2>
+    <p class="note">Quedan guardados en este celular para los próximos préstamos.</p>
+    <label class="field"><span>Nombre y apellido</span><input id="pnom" autocomplete="name"></label>
+    <div class="row2">
+      <label class="field"><span>DNI</span><input id="pdni" inputmode="numeric"></label>
+      <label class="field"><span>CUIT</span><input id="pcuit" inputmode="numeric"></label>
+    </div>
+    <label class="field"><span>Domicilio</span><input id="pdom"></label>
+    <label class="field"><span>CBU para cobrar cuotas</span><input id="pcbu" inputmode="numeric"></label>
+    <div class="row2">
+      <label class="field"><span>Ciudad de firma</span><input id="ciudad"></label>
+      <label class="field"><span>Lugar de pago (efectivo)</span><input id="lugar"></label>
+    </div>
+  </section>
+
+  <!-- DOCUMENTOS -->
+  <section id="docs" role="tabpanel" hidden>
+    <h2 class="no-print">Contrato y pagaré</h2>
+    <div id="missing" class="warn no-print" hidden></div>
+    <button class="btn no-print" id="btnPdf" type="button">Descargar PDF para imprimir</button>
+    <button class="btn ghost no-print" id="btnPrint" type="button">Imprimir desde el navegador</button>
+    <p class="note no-print">Los montos en letras se escriben solos. Revisalos antes de firmar.</p>
+    <div class="paper" id="docContrato"></div>
+    <div class="paper" id="docPagare"></div>
+  </section>
+
+  <!-- CRONOGRAMA -->
+  <section id="crono" role="tabpanel" hidden>
+    <h2>Cronograma de pagos</h2>
+    <p class="note" id="cronoLead"></p>
+    <div class="table-wrap"><table class="crono" id="cronoTable"></table></div>
+    <p class="note">La última cuota ajusta el capital para que el saldo cierre en cero.</p>
+    <button class="btn ghost" id="btnCopy" type="button">Copiar resumen para WhatsApp</button>
+  </section>
+
+  <!-- ESQUEMA -->
+  <section id="esquema" role="tabpanel" hidden>
+    <h2>Esquema de recargos</h2>
+    <p class="note">Recargo total sobre el monto financiado, según la cantidad de cuotas. Lo que cambies acá queda guardado.</p>
+    <div class="scheme" id="schemeGrid"></div>
+    <button class="btn ghost" id="btnResetScheme" type="button">Volver al esquema sugerido</button>
+    <h3>Regla rápida</h3>
+    <p class="note">Tasa mensual ≈ recargo total ÷ ((cuotas + 1) ÷ 2). Si la tasa mensual queda pareja entre plazos, estás cobrando lo mismo en todos.</p>
+  </section>
+</main>
+
+<nav class="tabs" role="tablist" aria-label="Secciones">
+  <button role="tab" data-tab="calc" aria-selected="true"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M8 18h2M12 18h4"/></svg>Calcular</button>
+  <button role="tab" data-tab="partes" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/></svg>Datos</button>
+  <button role="tab" data-tab="docs" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M9.5 12h6M9.5 15h6M9.5 18h4"/></svg>Contrato</button>
+  <button role="tab" data-tab="crono" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>Cuotas</button>
+  <button role="tab" data-tab="esquema" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V6M16 20v-8M22 20H2"/></svg>Esquema</button>
+</nav>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+const KEY="prestamos-app-v1";
+const NS=[1,2,3,4,5,6,9,12];
+const DEFAULT_SCHEME={1:6,2:9,3:12,4:15,5:18,6:20,9:30,12:40};
+const cq=n=>n===1?"1 cuota (pago único)":n+" cuotas";
+const today=new Date(); const iso=d=>d.toISOString().slice(0,10);
+function addMonths(isoStr,m){const [y,mo,d]=isoStr.split("-").map(Number);const dt=new Date(Date.UTC(y,mo-1+m,1));const last=new Date(Date.UTC(dt.getUTCFullYear(),dt.getUTCMonth()+1,0)).getUTCDate();dt.setUTCDate(Math.min(d,last));return dt.toISOString().slice(0,10);}
+const defaults={monto:1000000,n:6,gastos:0,cman:"",iva:0,pun:"",fecha:iso(today),venc1:"",venc1Manual:false,scheme:{...DEFAULT_SCHEME},
+  dnom:"",ddni:"",dcuil:"",ddom:"",dtel:"",dmail:"",dcbu:"",
+  pnom:"",pdni:"",pcuit:"",pdom:"",pcbu:"",ciudad:"San Luis",lugar:""};
+let S={...defaults};
+try{const raw=localStorage.getItem(KEY);if(raw){const o=JSON.parse(raw);S={...defaults,...o,scheme:{...DEFAULT_SCHEME,...(o.scheme||{})}};}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+
+const $=id=>document.getElementById(id);
+const fmt=n=>"$ "+Math.round(n).toLocaleString("es-AR");
+const pct=(x,d=2)=>(x*100).toLocaleString("es-AR",{minimumFractionDigits:d,maximumFractionDigits:d})+" %";
+const parseNum=s=>{if(s===""||s==null)return NaN;s=String(s).replace(/\$/g,"").replace(/\s/g,"").replace(/\./g,"").replace(",",".");return Number(s);};
+const fdate=isoStr=>{if(!isoStr)return"";const [y,m,d]=isoStr.split("-");return `${d}/${m}/${y}`;};
+const MESES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const flong=isoStr=>{const [y,m,d]=isoStr.split("-").map(Number);return `${d} de ${MESES[m-1]} de ${y}`;};
+
+// RATE por bisección
+function rate(n,cuota,pv){if(!(cuota>0&&pv>0&&n>0))return NaN;if(cuota*n<=pv)return 0;let lo=1e-10,hi=5;for(let k=0;k<200;k++){const m=(lo+hi)/2;const v=cuota*(1-Math.pow(1+m,-n))/m;if(v>pv)lo=m;else hi=m;}return (lo+hi)/2;}
+
+// Número a letras (es-AR)
+const U=["","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"];
+const D=["","","","treinta","cuarenta","cincuenta","sesenta","setenta","ochenta","noventa"];
+const C=["","ciento","doscientos","trescientos","cuatrocientos","quinientos","seiscientos","setecientos","ochocientos","novecientos"];
+function tres(n,apoc){if(n===0)return"";if(n===100)return"cien";const c=Math.floor(n/100),r=n%100;let s=C[c];let t="";
+  if(r<30){t=U[r];}else{const d=Math.floor(r/10),u=r%10;t=D[d]+(u?" y "+U[u]:"");}
+  if(apoc){t=t.replace(/veintiuno$/,"veintiún").replace(/uno$/,"un");}
+  return (s+(s&&t?" ":"")+t).trim();}
+function letras(num){num=Math.round(num);if(num===0)return"cero";const mill=Math.floor(num/1e6),miles=Math.floor((num%1e6)/1000),resto=num%1000;let out=[];
+  if(mill){if(mill===1)out.push("un millón");else out.push(miles6(mill)+" millones");}
+  if(miles){out.push(miles===1?"mil":tres(miles,true)+" mil");}
+  if(resto){out.push(tres(resto,false));}
+  return out.join(" ");}
+function miles6(n){const m=Math.floor(n/1000),r=n%1000;let o=[];if(m)o.push(m===1?"mil":tres(m,true)+" mil");if(r)o.push(tres(r,true));return o.join(" ");}
+
+// Redondeo hacia arriba a la centena, sin errores de coma flotante (229500.0000001 no debe pasar a 229600)
+const up100=x=>Math.ceil(Math.round(x*100)/10000)*100;
+function calc(){
+  const monto=S.monto||0,n=S.n,g=S.gastos||0,fin=monto+g;
+  const rec=(Number(S.scheme[n])||0)/100;
+  const cman=parseNum(S.cman);
+  const cuota0=(cman>0)?cman:up100(fin*(1+rec)/n);
+  const total0=cuota0*n,int=total0-fin;
+  const im=rate(n,cuota0,fin),tna=im*12,tea=Math.pow(1+im,12)-1;
+  const cft=Math.pow(1+rate(n,cuota0,monto),12)-1;
+  const iva=(Number(S.iva)||0)/100;
+  const cuota=cuota0+int*iva/n,total=cuota*n;
+  const cftimp=Math.pow(1+rate(n,cuota,monto),12)-1;
+  const punIn=parseNum(S.pun);const pun=(punIn>0)?punIn/100:Math.round(tna*0.5*10000)/10000;
+  const venc1=S.venc1Manual&&S.venc1?S.venc1:addMonths(S.fecha,1);
+  return {monto,n,g,fin,rec,cuota0,total0,int,im,tna,tea,cft,iva,cuota,total,cftimp,pun,venc1,manual:cman>0,recReal:total0/fin-1,ganancia:total0-fin};
+}
+
+// ---------- UI binding ----------
+const moneyFields=["monto","gastos","cman"];
+function setMoneyInput(id){const v=id==="cman"?parseNum(S.cman):S[id];$(id).value=(v>0||(id!=="cman"&&v===0))?Math.round(v).toLocaleString("es-AR"):"";}
+moneyFields.forEach(id=>{setMoneyInput(id);
+  $(id).addEventListener("input",e=>{const raw=e.target.value;const v=parseNum(raw);
+    if(id==="cman")S.cman=isNaN(v)?"":String(v);else S[id]=isNaN(v)?0:v;save();render(false);});
+  $(id).addEventListener("blur",()=>setMoneyInput(id));
+});
+["iva","pun"].forEach(id=>{$(id).value=S[id]===""?"":String(S[id]).replace(".",",");$(id).addEventListener("input",e=>{const v=parseNum(e.target.value);S[id]=isNaN(v)?(id==="iva"?0:""):v;save();render(false);});});
+$("fecha").value=S.fecha;$("fecha").addEventListener("input",e=>{S.fecha=e.target.value||iso(today);save();render();});
+$("venc1").addEventListener("input",e=>{S.venc1=e.target.value;S.venc1Manual=!!e.target.value;save();render();});
+const textFields=["dnom","ddni","dcuil","ddom","dtel","dmail","dcbu","pnom","pdni","pcuit","pdom","pcbu","ciudad","lugar"];
+textFields.forEach(id=>{$(id).value=S[id]||"";$(id).addEventListener("input",e=>{S[id]=e.target.value;save();render(false);});});
+$("btnNuevo").addEventListener("click",()=>{if(!confirm("¿Borrar los datos del cliente actual?"))return;["dnom","ddni","dcuil","ddom","dtel","dmail","dcbu"].forEach(id=>{S[id]="";$(id).value="";});S.cman="";$("cman").value="";save();render();toast("Listo para un cliente nuevo");});
+
+// Segmento de cuotas
+const seg=$("segCuotas");NS.forEach(n=>{const b=document.createElement("button");b.type="button";b.innerHTML=`${n}<small id="sg${n}"></small>`;b.setAttribute("aria-label",cq(n));b.dataset.n=n;b.addEventListener("click",()=>{S.n=n;save();render();});seg.appendChild(b);});
+
+// Esquema
+function buildScheme(){const g=$("schemeGrid");g.innerHTML='<span class="h">Cuotas</span><span class="h">Recargo %</span><span class="h" style="text-align:right">Tasa mensual</span>';
+  NS.forEach(n=>{const c=document.createElement("span");c.className="c";c.textContent=n;const lab=document.createElement("label");const inp=document.createElement("input");inp.inputMode="decimal";inp.value=String(S.scheme[n]).replace(".",",");inp.setAttribute("aria-label",`Recargo para ${n} cuotas`);
+    inp.addEventListener("input",e=>{const v=parseNum(e.target.value);S.scheme[n]=isNaN(v)?0:v;save();render(false);});lab.appendChild(inp);const r=document.createElement("span");r.className="r";r.id="sr"+n;g.append(c,lab,r);});}
+buildScheme();
+$("btnResetScheme").addEventListener("click",()=>{S.scheme={...DEFAULT_SCHEME};save();buildScheme();render();toast("Esquema B restaurado");});
+
+// Tabs
+document.querySelectorAll("nav.tabs button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("nav.tabs button").forEach(x=>x.setAttribute("aria-selected",x===b?"true":"false"));
+  document.querySelectorAll("main section").forEach(s=>s.hidden=s.id!==b.dataset.tab);
+  window.scrollTo({top:0});
+}));
+
+function showErr(msg){const m=$("missing");m.hidden=false;m.textContent=msg;m.scrollIntoView({block:"center"});}
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),2400);}
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const B=(v,ph="________________")=>v&&String(v).trim()?String(v).trim():ph;
+
+// ---------- Textos del contrato (una sola fuente para pantalla y PDF) ----------
+function contratoData(R){
+  const p=S, h=B;
+  const fecha=S.fecha.split("-").map(Number);
+  const intro=`En ${h(p.ciudad)}, a los ${fecha[2]} días del mes de ${MESES[fecha[1]-1]} de ${fecha[0]}, entre ${h(p.pnom)}, DNI ${h(p.pdni)}, CUIT ${h(p.pcuit)}, con domicilio en ${h(p.pdom)} (EL PRESTAMISTA), y ${h(p.dnom)}, DNI ${h(p.ddni)}, CUIL ${h(p.dcuil)}, con domicilio real en ${h(p.ddom)}, correo electrónico ${h(p.dmail)} y teléfono ${h(p.dtel)} (EL DEUDOR), se celebra el presente contrato de préstamo de dinero (mutuo, arts. 1525 y siguientes del Código Civil y Comercial), sujeto a las siguientes cláusulas:`;
+  const c1= R.g>0
+    ? `EL PRESTAMISTA otorga a EL DEUDOR un préstamo por la suma de pesos ${letras(R.fin)} (${fmt(R.fin)}), que se aplica de la siguiente forma: (a) ${fmt(R.monto)} transferidos a la cuenta CBU ${h(p.dcbu)} de titularidad de EL DEUDOR; y (b) ${fmt(R.g)} abonados por EL PRESTAMISTA por cuenta y orden de EL DEUDOR, en concepto de gastos de certificación de las firmas de este contrato y del pagaré, que EL DEUDOR reconoce y acepta financiar dentro del préstamo. El comprobante de transferencia forma parte de este contrato y vale como recibo.`
+    : `EL PRESTAMISTA entrega a EL DEUDOR la suma de pesos ${letras(R.fin)} (${fmt(R.fin)}), mediante transferencia a la cuenta CBU ${h(p.dcbu)} de titularidad de EL DEUDOR. El comprobante de transferencia forma parte de este contrato y vale como recibo.`;
+  const tabla=[["Monto financiado",fmt(R.fin)]];
+  if(R.g>0)tabla.push(["Monto neto que recibe EL DEUDOR",fmt(R.monto)]);
+  tabla.push(["Cantidad de cuotas",R.n===1?"1 cuota (pago único)":`${R.n} cuotas mensuales y consecutivas`],[R.n===1?"Monto a pagar":"Monto de cada cuota",fmt(R.cuota)],
+    ["Vencimientos",R.n===1?`Pago único el ${fdate(R.venc1)}`:`1ª cuota el ${fdate(R.venc1)}; las siguientes, el mismo día de cada mes`],["Sistema de amortización","Francés (cuota fija)"],
+    ["Tasa nominal anual (TNA) fija",pct(R.tna)],["Tasa efectiva anual (TEA)",pct(R.tea)],
+    ["CFT sin impuestos",pct(R.cft)+" efectivo anual"],["CFT con impuestos",pct(R.cftimp)+" efectivo anual"],
+    ["Gastos de certificación de firmas",R.g>0?fmt(R.g)+" (incluidos en el monto financiado)":"Ninguno"],["TOTAL A PAGAR",fmt(R.total)]);
+  const cls=[
+    ["1. PRÉSTAMO.",c1],
+    ["2. CONDICIONES.","En cumplimiento del art. 36 de la Ley 24.240 se informan las condiciones del préstamo:"],
+    ["3. PAGO, MORA Y PRECANCELACIÓN.",`EL DEUDOR pagará cada cuota por transferencia a la cuenta CBU ${h(p.pcbu)} de EL PRESTAMISTA, o en ${h(p.lugar)}. La mora se produce automáticamente por el solo vencimiento de cualquier cuota (art. 886 del Código Civil y Comercial) y, desde entonces, el saldo adeudado devengará además un interés punitorio del ${pct(R.pun)} anual. ${R.n<=2?"La falta de pago de cualquier cuota a su vencimiento permite a EL PRESTAMISTA, previa intimación fehaciente por cinco (5) días hábiles, exigir el total adeudado.":"La falta de pago de dos cuotas, consecutivas o alternadas, permite a EL PRESTAMISTA, previa intimación fehaciente por cinco (5) días hábiles, exigir el total adeudado."} EL DEUDOR puede cancelar anticipadamente, en forma total o parcial, pagando el capital pendiente y los intereses devengados hasta ese día, sin cargo adicional.`],
+    ["4. PAGARÉ EN GARANTÍA.",`En este acto EL DEUDOR libra a favor de EL PRESTAMISTA un pagaré a la vista y sin protesto por pesos ${letras(R.total)} (${fmt(R.total)}), equivalente al total a pagar, que se integra a este contrato. Los pagos realizados se imputan contra su monto y, cancelado el préstamo, el pagaré se devuelve a EL DEUDOR.`],
+    ["5. DECLARACIONES Y DATOS PERSONALES.","EL DEUDOR declara que la documentación entregada (DNI, recibos de sueldo y comprobante de servicio) es verdadera y actual, y se obliga a informar todo cambio de domicilio, empleo o teléfono dentro de los cinco (5) días. Presta consentimiento libre, expreso e informado para el tratamiento de sus datos conforme a la Ley 25.326, con la finalidad de evaluar, administrar y cobrar este préstamo, incluida la consulta a la Central de Deudores del BCRA y a empresas de información crediticia y, ante falta de pago, la información a éstas con notificación previa. Puede ejercer gratuitamente sus derechos de acceso, rectificación y supresión. La Agencia de Acceso a la Información Pública, órgano de control de la Ley 25.326, atiende las denuncias por incumplimiento de esa norma."],
+    ["6. DOMICILIOS Y JURISDICCIÓN.","Son válidas las notificaciones en los domicilios indicados y, para EL DEUDOR, también en el correo electrónico y el teléfono (incluido WhatsApp) declarados. Para cualquier controversia son competentes los tribunales del domicilio real de EL DEUDOR. Se firman dos ejemplares de un mismo tenor; EL DEUDOR declara haber recibido su ejemplar y la información de la cláusula 2 antes de firmar."]
+  ];
+  const pag={
+    por:`Por ${fmt(R.total)}`,
+    lugarFecha:`Lugar y fecha de emisión: ${h(p.ciudad)}, ${flong(S.fecha)}.`,
+    cuerpo:`A la vista, PAGARÉ SIN PROTESTO (art. 50 del Decreto-Ley 5965/63) a ${h(p.pnom)}, DNI ${h(p.pdni)}, o a su orden, la cantidad de pesos ${letras(R.total)} (${fmt(R.total)}) por igual valor recibido en préstamo. Este pagaré se libra en garantía del contrato de préstamo de dinero celebrado entre las mismas partes el ${fdate(S.fecha)}, al que se encuentra integrado.`,
+    lugarPago:`Lugar de pago: ${h(p.lugar)}.`,
+    librador:[`Nombre y apellido: ${h(p.dnom)}`,`DNI: ${h(p.ddni)}`,`Domicilio: ${h(p.ddom)}`]
+  };
+  return {intro,tabla,cls,pag,sig:[["EL PRESTAMISTA",h(p.pnom),h(p.pdni)],["EL DEUDOR",h(p.dnom),h(p.ddni)]]};
+}
+
+function renderDocs(R){
+  const d=contratoData(R);
+  let html=`<h4>CONTRATO DE PRÉSTAMO DE DINERO</h4><p>${esc(d.intro)}</p>`;
+  d.cls.forEach(([t,x],i)=>{html+=`<p><strong>${esc(t)}</strong> ${esc(x)}</p>`;if(i===1){html+="<table>"+d.tabla.map(([a,b])=>`<tr><td>${a==="TOTAL A PAGAR"?"<b>"+a+"</b>":esc(a)}</td><td>${a==="TOTAL A PAGAR"?"<b>"+esc(b)+"</b>":esc(b)}</td></tr>`).join("")+"</table>";}});
+  html+=`<div class="sig">${d.sig.map(([w,n,dn])=>`<div><b>Firma ${w}</b><br>Aclaración: ${esc(n)}<br>DNI: ${esc(dn)}</div>`).join("")}</div>`;
+  $("docContrato").innerHTML=html;
+  const p=d.pag;
+  $("docPagare").innerHTML=`<h4>PAGARÉ</h4><p class="right">${esc(p.por)}</p><p>${esc(p.lugarFecha)}</p><p>${esc(p.cuerpo)}</p><p>${esc(p.lugarPago)}</p><p style="margin-top:16px"><b>LIBRADOR</b><br>${p.librador.map(esc).join("<br>")}</p><div class="sig"><div><b>Firma del librador</b></div><div style="border:0"></div></div>`;
+  const req=[["dnom","nombre del cliente"],["ddni","DNI del cliente"],["ddom","domicilio del cliente"],["dcbu","CBU del cliente"],["pnom","tu nombre"],["pdni","tu DNI"],["pcbu","tu CBU"]];
+  const miss=req.filter(([k])=>!String(S[k]||"").trim()).map(([,l])=>l);
+  $("missing").hidden=!miss.length;$("missing").textContent=miss.length?"Faltan datos: "+miss.join(", ")+". Completalos en la pestaña Datos.":"";
+}
+
+function cronograma(R){const rows=[];let saldo=R.fin;const ivaC=R.int*R.iva/R.n;let d=R.venc1;
+  for(let k=1;k<=R.n;k++){const i=saldo*R.im;let cap=k===R.n?saldo:R.cuota0-i;rows.push({k,d,saldo,i,cap,ivaC,c:R.cuota,fin:saldo-cap});saldo-=cap;d=addMonths(R.venc1,k);}
+  return rows;}
+
+function render(full=true){
+  const R=calc();
+  // hero
+  $("heroLead").textContent=R.n===1?"1 pago único de":`${R.n} cuotas de`;$("heroCuota").textContent=fmt(R.cuota);
+  $("heroTotal").textContent=fmt(R.total);$("heroTasa").textContent=pct(R.im);$("heroTea").textContent=pct(R.tea,1);
+  $("heroGastos").hidden=!(R.g>0);$("heroGastosVal").textContent=fmt(R.g);
+  // seg
+  seg.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(Number(b.dataset.n)===R.n)));
+  NS.forEach(n=>{const el=$("sg"+n);if(el)el.textContent=String(S.scheme[n]).replace(".",",")+"%";});
+  $("segSub").textContent="Debajo de cada número, el recargo total del esquema.";
+  $("venc1").value=R.venc1;
+  $("punHint").textContent=parseNum(S.pun)>0?"Valor fijo":"Vacío = 50% de la TNA ("+pct(Math.round(R.tna*0.5*10000)/10000)+")";
+  $("cmanWarn").hidden=!R.manual;
+  const res=[["Recibe el cliente",fmt(R.monto)],["Gastos de firmas financiados",R.g>0?fmt(R.g):"No"],["Monto financiado (base del recargo)",fmt(R.fin)],["Recargo aplicado",pct(R.recReal,1)+(R.manual?" (cuota manual)":"")],["Tu ganancia",fmt(R.ganancia)],["Tasa mensual",pct(R.im)],["TNA",pct(R.tna)],["TEA",pct(R.tea)],["CFT sin impuestos",pct(R.cft)],["CFT con impuestos",pct(R.cftimp)],["Punitorio anual",pct(R.pun)],["Cuota máx. 25% del sueldo → neto mínimo",fmt(R.cuota/0.25)]];
+  $("results").innerHTML=res.map(([a,b])=>`<div><span>${a}</span><strong>${b}</strong></div>`).join("");
+  // scheme rates
+  NS.forEach(n=>{const fin=R.fin;const c=up100(fin*(1+(Number(S.scheme[n])||0)/100)/n);const el=$("sr"+n);if(el)el.textContent=pct(rate(n,c,fin))+" · "+fmt(c);});
+  // crono
+  const rows=cronograma(R);
+  $("cronoLead").textContent=`${B(S.dnom,"Cliente sin nombre")} · Financiado ${fmt(R.fin)} · ${R.n===1?"pago único de":R.n+" cuotas de"} ${fmt(R.cuota)}`;
+  $("cronoTable").innerHTML="<thead><tr><th>Cuota</th><th>Vence</th><th>Interés</th><th>Capital</th>"+(R.iva>0?"<th>IVA</th>":"")+"<th>Cuota</th><th>Saldo</th></tr></thead><tbody>"+rows.map(r=>`<tr><td>${r.k}</td><td>${fdate(r.d)}</td><td>${fmt(r.i)}</td><td>${fmt(r.cap)}</td>${R.iva>0?`<td>${fmt(r.ivaC)}</td>`:""}<td>${fmt(r.c)}</td><td>${fmt(Math.max(0,r.fin))}</td></tr>`).join("")+"</tbody>";
+  renderDocs(R);
+}
+
+// ---------- PDF ----------
+function buildPdf(){
+  const R=calc(),d=contratoData(R);
+  const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"mm",format:"a4"});
+  const L=18,W=174,PH=297,BOT=280;let y=20;
+  const ensure=h=>{if(y+h>BOT){doc.addPage();y=20;}};
+  function para(text,{size=10,bold=false,align="justify",gap=2.2,lead=""}={}){
+    doc.setFont("helvetica",bold?"bold":"normal");doc.setFontSize(size);
+    const lh=size*0.42;
+    if(lead){doc.setFont("helvetica","bold");const lw=doc.getTextWidth(lead+" ");doc.setFont("helvetica","normal");
+      // primera línea con título en negrita
+      const first=doc.splitTextToSize(text,W-lw);const firstLine=first[0];const rest=text.slice(firstLine.length).trim();
+      ensure(lh);doc.setFont("helvetica","bold");doc.text(lead,L,y);doc.setFont("helvetica","normal");doc.text(firstLine,L+lw,y,rest?{align:"justify",maxWidth:W-lw}:{});y+=lh;
+      if(rest){const lines=doc.splitTextToSize(rest,W);lines.forEach((ln,ix)=>{ensure(lh);doc.text(ln,L,y,ix<lines.length-1?{align:"justify",maxWidth:W}:{});y+=lh;});}
+      y+=gap;return;}
+    const lines=doc.splitTextToSize(text,W);
+    lines.forEach((ln,ix)=>{ensure(lh);if(align==="center")doc.text(ln,105,y,{align:"center"});else if(align==="right")doc.text(ln,L+W,y,{align:"right"});else doc.text(ln,L,y,(align==="justify"&&ix<lines.length-1)?{align:"justify",maxWidth:W}:{});y+=lh;});
+    y+=gap;}
+  para("CONTRATO DE PRÉSTAMO DE DINERO",{size:13,bold:true,align:"center",gap:4});
+  para(d.intro);
+  d.cls.forEach(([t,x],i)=>{para(x,{lead:t});
+    if(i===1){const c1=78,rh=6.2;doc.setFontSize(9.5);
+      d.tabla.forEach(([a,b])=>{ensure(rh);const bold=a==="TOTAL A PAGAR";doc.setFillColor(238,238,238);doc.rect(L,y-4.3,c1,rh,"FD");doc.rect(L+c1,y-4.3,W-c1,rh);
+        doc.setFont("helvetica",bold?"bold":"normal");doc.text(a,L+2,y);const vb=doc.splitTextToSize(b,W-c1-4)[0];doc.text(vb,L+c1+2,y);y+=rh;});
+      y+=3;}});
+  ensure(34);y+=16;doc.setFontSize(9.5);
+  d.sig.forEach(([w,n,dn],ix)=>{const x=L+ix*95;doc.line(x,y,x+65,y);doc.setFont("helvetica","bold");doc.text("Firma "+w,x,y+5);doc.setFont("helvetica","normal");doc.text("Aclaración: "+n,x,y+10);doc.text("DNI: "+dn,x,y+15);});
+  // Pagaré
+  doc.addPage();y=22;const p=d.pag;
+  para("PAGARÉ",{size:14,bold:true,align:"center",gap:6});
+  para(p.por,{size:12,bold:true,align:"right",gap:6});
+  para(p.lugarFecha,{size:11});para(p.cuerpo,{size:11,gap:4});para(p.lugarPago,{size:11,gap:8});
+  para("LIBRADOR",{size:11,bold:true,gap:1});p.librador.forEach(l=>para(l,{size:11,gap:0.5,align:"left"}));
+  y+=24;doc.line(L,y,L+70,y);doc.setFont("helvetica","bold");doc.setFontSize(10);doc.text("Firma del librador",L,y+5);
+  // pie con firma del deudor en cada hoja del contrato
+  const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(110);doc.text(`Página ${i} de ${pages}`,L,PH-10);if(i<pages)doc.text("Firma deudor: ____________________",L+W,PH-10,{align:"right"});doc.setTextColor(0);}
+  return doc;
+}
+const nombreArchivo=()=>{const n=(S.dnom||"cliente").trim().replace(/[^\p{L}\p{N} ]/gu,"").replace(/\s+/g,"-");return `Contrato-y-pagare-${n}-${S.fecha}.pdf`;};
+let downloads=null;
+if(window.claude&&typeof window.claude.use==="function"){window.claude.use("downloads").then(x=>{downloads=x;}).catch(()=>{});}
+$("btnPdf").addEventListener("click",async()=>{
+  if(!window.jspdf){toast("No se pudo cargar el generador de PDF. Usá Imprimir.");return;}
+  let doc;try{doc=buildPdf();}catch(e){showErr("No se pudo armar el PDF ("+(e&&e.message||e)+").");return;}
+  const name=nombreArchivo();
+  if(!window.claude){try{doc.save(name);toast("PDF descargado");}catch(e){showErr("No se pudo descargar el PDF. Usá «Imprimir desde el navegador» y elegí «Guardar como PDF».");}return;}
+  if(!downloads){try{downloads=await window.claude?.use?.("downloads");}catch(e){downloads=null;}}
+  if(downloads){try{await downloads.save({filename:name,data:doc.output("blob")});toast("PDF guardado");return;}
+    catch(e){const c=e&&e.code;
+      if(c==="declined"){toast("Descarga cancelada");return;}
+      if(c==="rate_limited"){showErr("Ya hay una descarga pendiente. Esperá unos segundos y volvé a tocar el botón.");return;}
+      if(c==="extension_not_enabled"){showErr("Este visor no permite bajar PDF. Tocá «Imprimir desde el navegador» y elegí «Guardar como PDF».");return;}
+      showErr("La descarga falló (código: "+(c||"desconocido")+"). Probá abrir este link desde Chrome o Safari, o usá «Imprimir desde el navegador».");return;}}
+  if(!window.claude){try{doc.save(name);toast("PDF descargado");return;}catch(e){}}
+  try{const url=URL.createObjectURL(doc.output("blob"));const w=window.open(url,"_blank");if(w){toast("PDF abierto en otra pestaña");return;}}catch(e){}
+  showErr("Este visor no deja descargar archivos. Abrí este link desde Chrome o Safari del celular, o usá «Imprimir desde el navegador» y elegí «Guardar como PDF».");
+});
+$("btnPrint").addEventListener("click",()=>{try{window.print();}catch(e){toast("Tu navegador no permite imprimir desde acá. Usá Descargar PDF.");}});
+
+// Resumen WhatsApp
+$("btnCopy").addEventListener("click",async()=>{const R=calc();const rows=cronograma(R);
+  const txt=`Préstamo de ${fmt(R.monto)}${R.g>0?` (+ ${fmt(R.g)} de gastos de firmas)`:""}\n${R.n===1?"Pago único de":R.n+" cuotas de"} ${fmt(R.cuota)}\nTotal a pagar: ${fmt(R.total)}\nTEA: ${pct(R.tea)} · CFT: ${pct(R.cftimp)}\n\nVencimientos:\n`+rows.map(r=>`${r.k}. ${fdate(r.d)} — ${fmt(r.c)}`).join("\n");
+  try{await navigator.clipboard.writeText(txt);toast("Resumen copiado");}catch(e){prompt("Copiá el resumen:",txt);}});
+
+render();
+})();
+</script>
+</body>
+</html>
